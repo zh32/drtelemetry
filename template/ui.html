@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="https://fonts.googleapis.com/css?family=Squada+One" rel="stylesheet">
+    <script src="http://bernii.github.io/gauge.js/dist/gauge.min.js"></script>
+    <style>
+        body {
+            font-family: 'Squada One', cursive;
+        }
+
+        body > div {
+            width: 600px;
+            position: relative;
+        }
+
+        #stats {
+            top: 225px;
+            left: 0;
+            right: 0;
+            font-size: 35px;
+            position: absolute;
+        }
+
+        #stats p {
+            margin: 0;
+            color: white;
+            text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+        }
+
+        #pedals {
+            top: 200px;
+        }
+
+        p {
+            text-align: center;
+        }
+
+        #kph {
+            color: rgb(238, 238, 238);
+            left: 0;
+            right: 0;
+            text-align: center;
+            top: 162px;
+            position: absolute;
+            font-size: 20px;
+        }
+
+        #kph-text {
+            left: 0;
+            right: 0;
+            text-align: center;
+            top: 0;
+            position: absolute;
+            font-size: 35px;
+        }
+
+        #kph > p {
+            position: relative;
+            top: 10px;
+        }
+
+        #gear-text {
+            left: 0;
+            right: 0;
+            text-align: center;
+            top: 75px;
+            position: absolute;
+            font-size: 100px;
+            color: white;
+            text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+        }
+
+        #rpm {
+            position: absolute;
+            left: 0;
+            right: 0;
+        }
+
+        .gear-circle {
+            height: 140px;
+            width: 140px;
+            background-color: #bbb;
+            border-radius: 50%;
+            display: inline-block;
+            left: 230px;
+            top: 64px;
+            position: absolute;
+        }
+    </style>
+</head>
+<body>
+<div id="gauge">
+    <canvas id="rpm" height="300" width="600"></canvas>
+    <p class="gear-circle"></p>
+    <div id="kph">
+        <div id="kph-text">0</div>
+        <p>KM/H</p>
+    </div>
+    <div id="gear-text">N</div>
+    <div id="stats">
+        <p id="progress">0 %</p>
+        <p id="distance">0.0 km</p>
+    </div>
+</div>
+<div id="pedals">
+    <canvas id="pedals-canvas" height="300" width="600"></canvas>
+</div>
+<script>
+    var webSocket;
+    var rpmGauge;
+    var pedalPositionCanvas;
+    var pedalPositionCtx;
+    var gearElement = document.getElementById("gear-text");
+    var kphElement = document.getElementById("kph-text");
+    var progressElement = document.getElementById("progress");
+    var distanceElement = document.getElementById("distance");
+    var rpmGaugeCanvas = document.getElementById('rpm');
+
+    var rpmGaugeOptions = {
+        angle: -0.3, // The span of the rpmGauge arc
+        lineWidth: 0.2, // The line thickness
+        radiusScale: 1, // Relative radius
+        pointer: {
+            length: 0.54, // // Relative to rpmGauge radius
+            strokeWidth: 0.04, // The thickness
+            color: '#ff0f31' // Fill color
+        },
+        limitMax: false,     // If false, max value increases automatically if value > maxValue
+        limitMin: false,     // If true, the min value of the rpmGauge will be fixed
+        strokeColor: 'rgba(238, 238, 238, 0.4)',  // to see which ones work best for you
+        generateGradient: true,
+        highDpiSupport: true,     // High resolution support
+        percentColors: [[0.0, "#a9d70b"], [0.60, "#a9d70b"], [0.80, "#f9c802"], [1.0, "#ff0000"]],
+        renderTicks: {
+            divisions: 10,
+            divWidth: 0.5,
+            divLength: 0.2,
+            divColor: "#333333"
+        }
+    };
+
+
+    rpmGauge = new Gauge(rpmGaugeCanvas).setOptions(rpmGaugeOptions); // create sexy rpmGauge!
+    rpmGauge.maxValue = 3000; // set max rpmGauge value
+    rpmGauge.setMinValue(0);  // Prefer setter over rpmGauge.minValue = 0
+    rpmGauge.animationSpeed = 2; // set animation speed (32 is default value)
+    rpmGauge.set(0); // set actual value
+
+
+    pedalPositionCanvas = document.getElementById("pedals-canvas");
+    pedalPositionCtx = pedalPositionCanvas.getContext("2d");
+    pedalPositionCtx.translate(0, pedalPositionCanvas.height);
+    pedalPositionCtx.scale(1, -1);
+
+    renderPedalPositions(0, 0, 0);
+
+    function renderPedalPositions(throttle, brake, clutch) {
+        var barHeight = 200;
+        var barWidth = 60;
+
+        throttle = barHeight * throttle;
+        brake = barHeight * brake;
+        clutch = barHeight * clutch;
+
+        pedalPositionCtx.clearRect(0, 0, pedalPositionCanvas.width, pedalPositionCanvas.height);
+        pedalPositionCtx.fillStyle = "rgba(0,0,255,0.3)";
+        pedalPositionCtx.fillRect((pedalPositionCanvas.width / 2) - 100, 0, barWidth, barHeight);
+
+        pedalPositionCtx.fillStyle = "rgba(0,0,255,1)";
+        pedalPositionCtx.fillRect((pedalPositionCanvas.width / 2) - 100, 0, barWidth, clutch);
+
+        pedalPositionCtx.fillStyle = "rgba(255,0,0,0.3)";
+        pedalPositionCtx.fillRect((pedalPositionCanvas.width / 2) - 30, 0, barWidth, barHeight);
+
+        pedalPositionCtx.fillStyle = "rgba(255,0,0,1)";
+        pedalPositionCtx.fillRect((pedalPositionCanvas.width / 2) - 30, 0, barWidth, brake);
+
+        pedalPositionCtx.fillStyle = "rgba(0,255,0,0.3)";
+        pedalPositionCtx.fillRect((pedalPositionCanvas.width / 2) + 40, 0, barWidth, barHeight);
+
+        pedalPositionCtx.fillStyle = "rgba(0,255,0,1)";
+        pedalPositionCtx.fillRect((pedalPositionCanvas.width / 2) + 40, 0, barWidth, throttle);
+    }
+
+    function render(telemetryData) {
+        rpmGauge.maxValue = (Math.round((telemetryData.maxRpm * 10) / 1000) * 1000) + 1000;
+        rpmGauge.set(telemetryData.rpm * 10);
+
+        kphElement.innerHTML = Math.round(telemetryData.speed * 3.6);
+        distanceElement.innerHTML = (telemetryData.distance * 10).toFixed(1) +  " km";
+        progressElement.innerHTML = Math.round((100 / telemetryData.trackLength)* telemetryData.lapDistance)  + " %";
+
+        var gearText = "N";
+        switch (telemetryData.gear) {
+            case 1:
+                gearText = "1";
+                break;
+            case 2:
+                gearText = "2";
+                break;
+            case 3:
+                gearText = "3";
+                break;
+            case 4:
+                gearText = "4";
+                break;
+            case 5:
+                gearText = "5";
+                break;
+            case 6:
+                gearText = "6";
+                break;
+            case 7:
+                gearText = "7";
+                break;
+            case 10:
+                gearText = "R";
+                break;
+            default: gearText = "N";
+        }
+
+        gearElement.innerHTML = gearText;
+
+        renderPedalPositions(telemetryData.throttlePosition, telemetryData.brakePosition, telemetryData.clutchPosition);
+    }
+
+    function connect() {
+        webSocket = new WebSocket("{{.}}");
+        webSocket.onopen = function (evt) {
+            console.log("Websocket opened");
+        };
+        webSocket.onclose = function (evt) {
+            console.log("Websocket closed");
+            webSocket = null;
+        };
+        webSocket.onmessage = function (evt) {
+            var telemetryData = JSON.parse(evt.data);
+            render(telemetryData);
+        };
+        webSocket.onerror = function (evt) {
+            console.log("Websocket error");
+        };
+    }
+
+    (function () {
+        connect();
+    })();
+</script>
+</body>
+</html>
