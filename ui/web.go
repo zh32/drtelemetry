@@ -18,12 +18,14 @@ var upgrader = websocket.Upgrader{} // use default options
 
 var connections []*websocket.Conn
 
-var box = packr.NewBox("../template")
+var box = packr.NewBox("../resources")
 var ui = box.String("ui.html")
 var homeTemplate = template.Must(template.New("").Parse(ui))
 
 func ListenAndServe(dataChannel chan telemetry.TelemetryData) {
 	http.HandleFunc("/ws", HandleWs)
+	http.Handle("/assets/", http.FileServer(box))
+	http.Handle("/custom/", http.StripPrefix("/custom/", http.FileServer(http.Dir("."))))
 	http.HandleFunc("/", HandleUi)
 
 	go func() {
@@ -49,6 +51,13 @@ func HandleWs(w http.ResponseWriter, r *http.Request) {
 	select {}
 }
 
+type TemplateData struct {
+	CustomStyle   string
+	WebsocketHost string
+}
+
 func HandleUi(w http.ResponseWriter, r *http.Request) {
-	homeTemplate.Execute(w, "ws://"+r.Host+"/ws")
+	templateData := TemplateData{r.URL.Query().Get("style"), "ws://" + r.Host + "/ws"}
+
+	homeTemplate.Execute(w, templateData)
 }

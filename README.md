@@ -46,9 +46,22 @@ Run DRTelemetry from a terminal and add the following parameters.
 drtelemetry.exe --http 0.0.0.0:8080
 ``
 
-### Change styling
+### Customize styling
 
-You can change the styling by altering the CSS. This can be done with browser extensions like [Stylish](https://chrome.google.com/webstore/detail/stylish-custom-themes-for/fjnbnpbmkenffdnngjfgmeleoegfcffe).
+You can replace the stylesheet with your own.
+Just add a css file to the directory from where you start DRTelemetry and add a parameter to the browser URL.
+```css
+$ custom.css
+
+p {
+    color: violet;
+}
+```
+
+Browser-URL
+``http://localhost:8080/?style=custom.css``
+
+**Note:** DRTelemetry will serve all files in its current directory under the path ``/custom/<filename>``.
 
 ## Contributing
 
