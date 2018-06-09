@@ -2,7 +2,9 @@
 
 Shows telemetry data from DiRT Rally in a Browser...
 
-![DRTelemetry](./drt.PNG)
+Video:
+
+[![DRTelemetry 1.1](https://img.youtube.com/vi/JL6bmsJMFMI/0.jpg)](https://www.youtube.com/watch?v=JL6bmsJMFMI)
 
 ## Usage
 
@@ -29,9 +31,11 @@ Shows telemetry data from DiRT Rally in a Browser...
     
 ## Advanced usage
 
-### Change listening ports
+### Change ports
 
-You can change the ports on which DRTelemetry is listening for connections. This helps in scenarios where you either want to show the UI on a different computer or run DRTelemetry on a different computer than DiRT Rally.
+You can change the ports on which DRTelemetry is listening for connections. 
+This helps in scenarios where you either want to show the UI on a different computer
+or run DRTelemetry on a different computer than DiRT Rally.
 
 Run DRTelemetry from a terminal and add the following parameters.
 
